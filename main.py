@@ -1,119 +1,107 @@
-import tkinter as tk
-from tkinter import messagebox
+import pygame
 import random
+import sys
 
-class MillionGame:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Перший мільйон")
-        self.root.geometry("600x400")
-        self.root.configure(bg="#1e1e2f")
+# --- Ініціалізація Pygame ---
+pygame.init()
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Перший мільйон")
 
-        self.money_levels = [1000, 5000, 10000, 50000, 100000, 250000, 500000, 1000000]
-        self.current_question = 0
-        self.used_5050 = False
+# --- Кольори ---
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GOLD = (255, 215, 0)
+GRAY = (100, 100, 100)
+GREEN = (0, 200, 0)
+RED = (200, 0, 0)
+BLUE = (0, 0, 200)
 
-        self.questions = [
-            {
-                "question": "Столиця Франції?",
-                "options": ["Берлін", "Париж", "Мадрид", "Рим"],
-                "answer": 1
-            },
-            {
-                "question": "12 × 12 = ?",
-                "options": ["124", "144", "132", "154"],
-                "answer": 1
-            },
-            {
-                "question": "Найбільший океан?",
-                "options": ["Атлантичний", "Індійський", "Тихий", "Північний Льодовитий"],
-                "answer": 2
-            },
-            {
-                "question": "Автор 'Гамлета'?",
-                "options": ["Шекспір", "Діккенс", "Гете", "Байрон"],
-                "answer": 0
-            },
-            {
-                "question": "Хімічний символ золота?",
-                "options": ["Au", "Ag", "Fe", "O"],
-                "answer": 0
-            },
-            {
-                "question": "Скільки кісток у дорослої людини?",
-                "options": ["206", "210", "198", "250"],
-                "answer": 0
-            },
-            {
-                "question": "Найшвидша наземна тварина?",
-                "options": ["Лев", "Гепард", "Тигр", "Антилопа"],
-                "answer": 1
-            },
-            {
-                "question": "Мова програмування Python названа на честь?",
-                "options": ["Змії", "Вченого", "Комедійного шоу", "Бога"],
-                "answer": 2
-            }
-        ]
+# --- Шрифти ---
+font_question = pygame.font.SysFont("Arial", 28)
+font_option = pygame.font.SysFont("Arial", 24)
+font_money = pygame.font.SysFont("Arial", 30)
 
-        random.shuffle(self.questions)
+# --- Питання та варіанти ---
+questions = [
+    {"q": "Столиця Франції?", "options": ["Берлін", "Париж", "Мадрид", "Рим"], "answer": 1},
+    {"q": "12 × 12 = ?", "options": ["124", "144", "132", "154"], "answer": 1},
+    {"q": "Найбільший океан?", "options": ["Атлантичний", "Індійський", "Тихий", "Північний Льодовитий"], "answer": 2},
+    {"q": "Автор 'Гамлета'?", "options": ["Шекспір", "Діккенс", "Гете", "Байрон"], "answer": 0},
+    {"q": "Хімічний символ золота?", "options": ["Au", "Ag", "Fe", "O"], "answer": 0},
+    {"q": "Скільки кісток у дорослої людини?", "options": ["206", "210", "198", "250"], "answer": 0},
+    {"q": "Найшвидша наземна тварина?", "options": ["Лев", "Гепард", "Тигр", "Антилопа"], "answer": 1},
+    {"q": "Мова Python названа на честь?", "options": ["Змії", "Вченого", "Комедійного шоу", "Бога"], "answer": 2}
+]
 
-        self.label_money = tk.Label(root, text="", font=("Arial", 16), fg="gold", bg="#1e1e2f")
-        self.label_money.pack(pady=10)
+money_levels = [1000, 5000, 10000, 50000, 100000, 250000, 500000, 1000000]
 
-        self.label_question = tk.Label(root, text="", font=("Arial", 14), wraplength=500, bg="#1e1e2f", fg="white")
-        self.label_question.pack(pady=20)
+random.shuffle(questions)
 
-        self.buttons = []
-        for i in range(4):
-            btn = tk.Button(root, text="", width=40, height=2,
-                            command=lambda i=i: self.check_answer(i))
-            btn.pack(pady=5)
-            self.buttons.append(btn)
+current_q = 0
+used_5050 = False
+running = True
+disabled = []
 
-        self.btn_5050 = tk.Button(root, text="50/50", command=self.use_5050)
-        self.btn_5050.pack(pady=10)
+def draw_text(text, font, color, surface, x, y):
+    render = font.render(text, True, color)
+    surface.blit(render, (x, y))
 
-        self.load_question()
+def draw_buttons(options, disabled=[]):
+    btns = []
+    for i, option in enumerate(options):
+        color = GRAY if i in disabled else BLUE
+        rect = pygame.Rect(150, 200 + i*60, 500, 50)
+        pygame.draw.rect(screen, color, rect)
+        draw_text(option, font_option, WHITE, screen, rect.x + 10, rect.y + 10)
+        btns.append(rect)
+    return btns
 
-    def load_question(self):
-        q = self.questions[self.current_question]
-        self.label_money.config(text=f"Питання на {self.money_levels[self.current_question]} грн")
-        self.label_question.config(text=q["question"])
+while running:
+    screen.fill(BLACK)
 
-        for i in range(4):
-            self.buttons[i].config(text=q["options"][i], state="normal")
+    if current_q >= len(questions):
+        draw_text("🎉 ВИ ВИГРАЛИ ПЕРШИЙ МІЛЬЙОН! 🎉", font_money, GOLD, screen, 100, 250)
+        pygame.display.flip()
+        pygame.time.wait(5000)
+        break
 
-    def check_answer(self, choice):
-        correct = self.questions[self.current_question]["answer"]
+    q = questions[current_q]
+    draw_text(f"Питання на {money_levels[current_q]} грн", font_money, GOLD, screen, 250, 20)
+    draw_text(q["q"], font_question, WHITE, screen, 50, 100)
 
-        if choice == correct:
-            self.current_question += 1
-            if self.current_question == len(self.questions):
-                messagebox.showinfo("Перемога!", "🎉 Ти виграв ПЕРШИЙ МІЛЬЙОН!")
-                self.root.quit()
-            else:
-                self.load_question()
-        else:
-            win_money = self.money_levels[self.current_question - 1] if self.current_question > 0 else 0
-            messagebox.showerror("Гра завершена", f"Неправильно!\nТвій виграш: {win_money} грн")
-            self.root.quit()
+    buttons = draw_buttons(q["options"], disabled)
 
-    def use_5050(self):
-        if self.used_5050:
-            return
+    # --- Кнопка 50/50 ---
+    btn_5050_rect = pygame.Rect(350, 500, 100, 40)
+    pygame.draw.rect(screen, RED if used_5050 else GREEN, btn_5050_rect)
+    draw_text("50/50", font_option, WHITE, screen, btn_5050_rect.x+10, btn_5050_rect.y+5)
 
-        correct = self.questions[self.current_question]["answer"]
-        wrong_indexes = [i for i in range(4) if i != correct]
-        remove = random.sample(wrong_indexes, 2)
+    pygame.display.flip()
 
-        for i in remove:
-            self.buttons[i].config(state="disabled")
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mx, my = pygame.mouse.get_pos()
+            # Натиск на 50/50
+            if btn_5050_rect.collidepoint(mx, my) and not used_5050:
+                wrong_indexes = [i for i in range(4) if i != q["answer"]]
+                disabled = random.sample(wrong_indexes, 2)
+                used_5050 = True
+            # Натиск на варіант відповіді
+            for i, rect in enumerate(buttons):
+                if rect.collidepoint(mx, my) and i not in disabled:
+                    if i == q["answer"]:
+                        current_q += 1
+                        used_5050 = False
+                        disabled = []
+                    else:
+                        screen.fill(BLACK)
+                        draw_text(f"Неправильно! Ви виграли {money_levels[current_q-1] if current_q>0 else 0} грн", font_money, RED, screen, 100, 250)
+                        pygame.display.flip()
+                        pygame.time.wait(4000)
+                        running = False
 
-        self.used_5050 = True
-        self.btn_5050.config(state="disabled")
-
-
-root = tk.Tk()
-game = MillionGame(root)
-root.mainloop()
+pygame.quit()
+sys.exit()
