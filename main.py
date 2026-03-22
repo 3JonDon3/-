@@ -4,6 +4,8 @@ import sys
 
 # --- Ініціалізація Pygame ---
 pygame.init()
+pygame.mixer.music.load("Who_Wants_to_Be_a_Millionaire_-_Ask_The_Host_(SkySound.cc).mp3")  # файл музики
+pygame.mixer.music.play(-1)
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Перший мільйон")
